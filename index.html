@@ -1,0 +1,195 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport">
+    <title>Making your first Phaser 3 Game - Part 7</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+        canvas{
+          max-width: 640px;
+          width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+var TOUCH_START_X = 0;
+var TOUCH_START_Y = 0;
+var DIRECTION = 0;
+var FLG_TOUCH = false;
+var FLG_MOVE = false;
+var FLG_JUMP = false;
+var FLG_onFLOOR = true;
+
+var config = {
+    type: Phaser.WEBGL,
+    width: 640,
+    height: 600,
+    backgroundColor: '#2d2d2d',
+    parent: 'phaser-example',
+    pixelArt: true,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 300 },
+            debug: false
+        }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
+var controls;
+var player;
+
+var game = new Phaser.Game(config);
+
+function preload ()
+{
+    this.load.image('tiles', 'assets/tilesets.png');
+    this.load.tilemapTiledJSON('map', 'assets/tilemap.json');
+    this.load.spritesheet('player', 'assets/rockman_sprite.png', { frameWidth: 36, frameHeight: 36 });
+}
+
+function create ()
+{
+    var map = this.make.tilemap({ key: 'map' });
+
+    var tiles = map.addTilesetImage('tileset', 'tiles');
+
+    var layer = map.createStaticLayer("ground", tiles, 0, 0);
+
+    layer.setCollisionBetween(1, 3);
+    layer.setCollisionByProperty({ collides: true });
+
+    player = this.physics.add.sprite(0, 0, 'player');
+
+    // player.setBounce(0.02);
+    player.setCollideWorldBounds(true);
+
+    this.physics.add.collider(player, layer,collectStar);
+
+
+    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+
+    var cursors = this.input.keyboard.createCursorKeys();
+
+    // var controlConfig = {
+    //     camera: this.cameras.main,
+    //     left: player.left,
+    //     up: player.up,
+    //     speed: 0.5
+    // };
+    this.cameras.main.startFollow(player, true, 0.5, 0.5);
+
+
+    this.input.on('pointerdown', function (pointer) {
+
+      // console.log("x="+pointer.x+"/y="+pointer.y);
+
+      FLG_TOUCH = true;
+      DIRECTION = 0;
+
+      //タッチした位置を保存
+      TOUCH_START_X = pointer.x;
+      TOUCH_START_Y = pointer.y;
+
+      // console.log("pointerdown");
+
+      FLG_JUMP = true;
+
+    }, this);
+
+    this.input.on('pointerup', function (pointer) {
+
+      // console.log("pointerup");
+
+      FLG_MOVE = false;
+      FLG_TOUCH = false;
+      DIRECTION = 0;
+      TOUCH_START_X = 0;
+      TOUCH_START_Y = 0;
+
+      FLG_JUMP = false;
+
+    }, this);
+
+    this.input.on('pointermove', function (pointer) {
+      // console.log("pointermove");
+
+      FLG_MOVE = false;
+      DIRECTION = 0;
+
+      if(FLG_TOUCH == true){
+
+        // 左に移動
+        if( ( TOUCH_START_X - pointer.x ) > 10 ){
+          DIRECTION = -1;
+          FLG_MOVE = true;
+        }
+        // 右に移動
+        if( ( TOUCH_START_X - pointer.x ) < -10 ){
+          DIRECTION = 1;
+          FLG_MOVE = true;
+        }
+        if( ( TOUCH_START_X - pointer.x ) <= 10 && ( TOUCH_START_X - pointer.x ) >= -10 ){
+          DIRECTION = 0;
+          FLG_MOVE = false;
+        }
+
+      }
+
+
+    }, this);
+
+    // this.physics.add.collider(player, layer, collectStar, null, this);
+
+    // controls = new Phaser.Cameras.Controls.FixedKeyControl(controlConfig);
+}
+
+function update (time, delta)
+{
+  
+  FLG_onFLOOR = false;
+
+  // console.log("DIRECTION="+DIRECTION);
+  if(FLG_MOVE){
+    player.setVelocityX(DIRECTION* 100);    
+  }else{
+    player.setVelocityX(0);        
+  }
+  if(FLG_JUMP){
+    // console.log("FLG_JUMP  OK");
+    player.setVelocityY(-100);  
+  }else{
+  }
+  if(!FLG_TOUCH && !FLG_onFLOOR){
+    player.body.velocity.y = player.body.velocity.y*0.5;
+    // player.setVelocityY(0); 
+    player.body.gravity.y = 150;    
+  }
+}
+function onFloor ()
+{
+    // star.disableBody(true, true);
+
+    // score += 10;
+    // scoreText.setText('Score: ' + score);
+    console.log("collectStar");
+    FLG_onFLOOR = true;
+}
+
+
+</script>
+
+</body>
+</html>
